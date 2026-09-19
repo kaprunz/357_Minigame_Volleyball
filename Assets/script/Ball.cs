@@ -86,7 +86,8 @@ public class Ball : MonoBehaviour
         if (collision.gameObject.CompareTag("Floor") || collision.gameObject.CompareTag("Wall"))
         {
             // Reset ball's velocity when it hits the floor
-            Referee.instance.BallSpawn();
+            Referee.instance.PositionBall("Player");
+            Referee.instance.PositionPlayer();
         }
     }
 

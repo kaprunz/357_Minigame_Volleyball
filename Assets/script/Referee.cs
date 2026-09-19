@@ -26,7 +26,8 @@ public class Referee : MonoBehaviour
     }
     void Start()
     {
-        BallSpawn();
+        PositionBall("");
+        PositionPlayer();
     }
 
     // Update is called once per frame
@@ -35,11 +36,26 @@ public class Referee : MonoBehaviour
         
     }
 
-    public void BallSpawn()
+    public void PositionBall(string whoServe)
     {
-        Ball.transform.position = new Vector3(0, 2.5f, 0);
         ballRb.linearVelocity = Vector3.zero;
         ballRb.angularVelocity = Vector3.zero;
         ballRb.useGravity = false;
+        switch (whoServe)
+        {
+            case "Player":
+                Ball.transform.position = new Vector3(2.25f, 2.5f, -4f);
+                break;
+            default:
+                Ball.transform.position = new Vector3(0, 2.5f, 0);
+                break;
+        }
+    }
+
+    public void PositionPlayer()
+    {
+        Player.transform.position = new Vector3(2.25f, 1, -5f);
+        Player.GetComponent<Rigidbody>().linearVelocity = Vector3.zero;
+        Player.GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
     }
 }
