@@ -10,9 +10,19 @@ public class Player : MonoBehaviour
     [SerializeField]
     private Rigidbody rb;
 
+    [SerializeField]
+    public int Points;
+
     private InputAction moveAction;
     private InputAction jumpAction;
     private Vector2 moveValue;
+
+    public enum PlayerState
+    {
+        Grounded,
+        Jumping
+    }
+    public PlayerState currentState = PlayerState.Grounded;
 
     void Start()
     {
@@ -26,7 +36,7 @@ public class Player : MonoBehaviour
     void Update()
     {
         Movement();
-        Jump();
+        Jump(); 
     }
 
     private void Movement()
@@ -38,9 +48,17 @@ public class Player : MonoBehaviour
     
     private void Jump()
     {
-        if (jumpAction.triggered)
+        if (jumpAction.triggered&& currentState == PlayerState.Grounded)
         {
             rb.AddForce(Vector3.up * forcePower, ForceMode.Impulse);
+            currentState = PlayerState.Jumping;
+        }
+    }
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Floor"))
+        {
+            currentState = PlayerState.Grounded;
         }
     }
 }
