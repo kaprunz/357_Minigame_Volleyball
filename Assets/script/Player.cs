@@ -1,9 +1,11 @@
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
 
 public class Player : MonoBehaviour
 {
+    public static Player instance;
     [SerializeField]
     private float forcePower;
 
@@ -16,6 +18,12 @@ public class Player : MonoBehaviour
     private InputAction moveAction;
     private InputAction jumpAction;
     private Vector2 moveValue;
+
+    private void Awake()
+    {
+        if (instance == null) instance = this;
+        else Destroy(gameObject);
+    }
 
     public enum PlayerState
     {
@@ -61,5 +69,7 @@ public class Player : MonoBehaviour
             currentState = PlayerState.Grounded;
         }
     }
+
+
 }
 

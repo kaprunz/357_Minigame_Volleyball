@@ -124,7 +124,6 @@ public class Ball : MonoBehaviour
         // Immediately freeze the ball so it stays in place during the scoring pause
         rb.linearVelocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
-        rb.isKinematic = true;
 
         // Trigger the unified scoring routine on the Referee
         if (transform.position.z < 0f)

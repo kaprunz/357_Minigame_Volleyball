@@ -49,6 +49,12 @@ public class EnemyAI : MonoBehaviour
 
     public Player.PlayerState currentPhysicalState = Player.PlayerState.Grounded;
 
+    public static EnemyAI instance;
+    private void Awake()
+    {
+        if (instance == null) instance = this;
+        else Destroy(gameObject);
+    }
     private void Start()
     {
         if (rb == null) rb = GetComponent<Rigidbody>();
@@ -243,4 +249,5 @@ public class EnemyAI : MonoBehaviour
             currentState = AIState.MimicPlayer;
         }
     }
+
 }

@@ -20,8 +20,6 @@ public class Referee : MonoBehaviour
     [Header("Timing Settings")]
     [SerializeField] private float scorePauseDuration = 1.2f;
 
-    public int playerScore = 0;
-    public int enemyScore = 0;
 
     private bool isResettingRound = false;
 
@@ -51,8 +49,8 @@ public class Referee : MonoBehaviour
         isResettingRound = true;
 
         // 1. Update Scores
-        if (scorer == "Player") playerScore++;
-        else if (scorer == "Enemy") enemyScore++;
+        if (scorer == "Player") Player.instance.Points++;
+        else if (scorer == "Enemy") EnemyAI.instance.Points++;
 
         // 2. Show "POINT!" banner/UI
         // if (pointScoredUI != null) pointScoredUI.SetActive(true);
