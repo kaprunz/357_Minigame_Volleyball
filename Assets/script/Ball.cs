@@ -16,6 +16,10 @@ public class Ball : MonoBehaviour
     [SerializeField] private float spikeUpForce = 2f;
     [SerializeField] private float spikeForwardForce = 15f;
 
+    [Header("Wall Bounce Settings")]
+    [SerializeField] private float wallUpwardBoost = 6f;      // Upward force added on wall impact
+    [SerializeField] private float wallReflectionForce = 8f;   // Horizontal bounce power off walls
+
     [Header("Direction Settings")]
     [SerializeField, Range(0f, 1f)]
     private float directionalInfluence = 0.4f;
@@ -25,7 +29,9 @@ public class Ball : MonoBehaviour
 
     [SerializeField] private Rigidbody rb;
 
-    public GameObject lastTouchedPlayer { get; private set; }
+    // Internal Wall Bounce Cooldown
+    private float wallBounceCooldown = 0.2f;
+    private float nextWallBounceTime = 0f;
 
     private void Start()
     {
@@ -58,42 +64,85 @@ public class Ball : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        // 1. Human Player (at -Z court, hits towards +Z / Enemy court)
+        // 1. Check for Human Player Collision
         if (collision.gameObject.CompareTag("Player"))
         {
             Player player = collision.gameObject.GetComponent<Player>();
             if (player != null)
             {
-                lastTouchedPlayer = collision.gameObject;
                 HandleHit(collision.transform, Vector3.forward, player.currentState == Player.PlayerState.Jumping);
             }
         }
-        // 2. Enemy AI (at +Z court, hits towards -Z / Player court)
+        // 2. Check for Enemy AI Collision
         else if (collision.gameObject.CompareTag("Enemy"))
         {
             EnemyAI enemy = collision.gameObject.GetComponent<EnemyAI>();
             if (enemy != null)
             {
-                lastTouchedPlayer = collision.gameObject;
-                // Changed to Vector3.back (-Z) so the ball travels across the net toward the Player
                 HandleHit(collision.transform, Vector3.back, enemy.currentPhysicalState == Player.PlayerState.Jumping);
             }
         }
-        // 3. Out of Bounds / Floor Collision
-        else if (collision.gameObject.CompareTag("Floor") || collision.gameObject.CompareTag("Wall"))
+        // 3. Wall Collision -> Adds upward pop with a 0.2s cooldown
+        else if (collision.gameObject.CompareTag("Wall"))
         {
-            if (Referee.instance != null)
+            if (Time.time >= nextWallBounceTime)
             {
-                Referee.instance.PositionBall("Player");
-                Referee.instance.PositionPlayer();
+                HandleWallBounce(collision);
             }
+        }
+        // 4. Floor Collision -> Triggers Point Scoring
+        else if (collision.gameObject.CompareTag("Floor"))
+        {
+            HandlePointScored();
+        }
+    }
+
+    private void HandleWallBounce(Collision collision)
+    {
+        // Set cooldown timestamp
+        nextWallBounceTime = Time.time + wallBounceCooldown;
+
+        // Get the impact contact normal pointing away from the wall
+        ContactPoint contact = collision.contacts[0];
+        Vector3 wallNormal = contact.normal;
+        wallNormal.y = 0f; // Keep pure horizontal direction away from wall
+        wallNormal.Normalize();
+
+        // Reset linear velocity for predictable bounce trajectory
+        rb.linearVelocity = Vector3.zero;
+
+        // Combine outward reflection vector with upward boost
+        Vector3 wallBounceForce = (wallNormal * wallReflectionForce) + (Vector3.up * wallUpwardBoost);
+
+        rb.AddForce(wallBounceForce, ForceMode.Impulse);
+    }
+
+    private void HandlePointScored()
+    {
+        if (Referee.instance == null) return;
+
+        // Immediately freeze the ball so it stays in place during the scoring pause
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+        rb.isKinematic = true;
+
+        // Trigger the unified scoring routine on the Referee
+        if (transform.position.z < 0f)
+        {
+            Referee.instance.ScorePoint("Enemy");
+        }
+        else
+        {
+            Referee.instance.ScorePoint("Player");
         }
     }
 
     private void HandleHit(Transform hitterTransform, Vector3 targetBaseDirection, bool isJumping)
     {
+        rb.isKinematic = false;
         rb.useGravity = true;
         rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
 
         Vector3 hitDirection = CalculateHitDirection(hitterTransform, targetBaseDirection);
 

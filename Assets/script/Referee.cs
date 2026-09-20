@@ -1,61 +1,102 @@
+using System.Collections;
 using UnityEngine;
+using TMPro; // Standard Unity TextMeshPro
 
 public class Referee : MonoBehaviour
 {
-
-    public GameObject Ball;
-    public GameObject Player;
-    public GameObject Enemy;
     public static Referee instance;
 
-    [SerializeField]
-    Rigidbody ballRb;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    [Header("Transform References")]
+    [SerializeField] private Transform playerTransform;
+    [SerializeField] private Transform enemyTransform;
+    [SerializeField] private Transform ballTransform;
+
+    [Header("Serve Position Offsets")]
+    [SerializeField] private Vector3 playerSpawnPos = new Vector3(0f, 1f, -5f);
+    [SerializeField] private Vector3 enemySpawnPos = new Vector3(0f, 1f, 5f);
+    [SerializeField] private Vector3 playerServeBallOffset = new Vector3(0f, 3f, -4f);
+    [SerializeField] private Vector3 enemyServeBallOffset = new Vector3(0f, 3f, 4f);
+
+    [Header("Timing Settings")]
+    [SerializeField] private float scorePauseDuration = 1.2f;
+
+    public int playerScore = 0;
+    public int enemyScore = 0;
+
+    private bool isResettingRound = false;
 
     private void Awake()
     {
-        // Set up Singleton instance
-        if (instance == null)
+        if (instance == null) instance = this;
+        else Destroy(gameObject);
+    }
+
+    private void Start()
+    {
+        // Initial serve setup on game start (Player serves first)
+        ResetRoundPositions("Player");
+    }
+
+    /// <summary>
+    /// Unified point handler called by Ball.cs
+    /// </summary>
+    public void ScorePoint(string scorer)
+    {
+        if (isResettingRound) return;
+        StartCoroutine(PointScoredRoutine(scorer));
+    }
+
+    private IEnumerator PointScoredRoutine(string scorer)
+    {
+        isResettingRound = true;
+
+        // 1. Update Scores
+        if (scorer == "Player") playerScore++;
+        else if (scorer == "Enemy") enemyScore++;
+
+        // 2. Show "POINT!" banner/UI
+        // if (pointScoredUI != null) pointScoredUI.SetActive(true);
+
+        // 3. Pause for brief second (Pikachu Volleyball style)
+        yield return new WaitForSeconds(scorePauseDuration);
+
+        // 4. Hide UI banner
+        // if (pointScoredUI != null) pointScoredUI.SetActive(false);
+
+        // 5. Reset Positions (Unified method call)
+        ResetRoundPositions(scorer);
+
+        isResettingRound = false;
+    }
+
+    /// <summary>
+    /// Unified method to reposition Player, Enemy, and Ball based on who serves.
+    /// </summary>
+    /// <param name="servingTeam">"Player" or "Enemy"</param>
+    public void ResetRoundPositions(string servingTeam)
+    {
+        // Freeze ball physics and disable gravity until it gets hit
+        Rigidbody ballRb = ballTransform.GetComponent<Rigidbody>();
+        if (ballRb != null)
         {
-            instance = this;
+            ballRb.linearVelocity = Vector3.zero;
+            ballRb.angularVelocity = Vector3.zero;
+            ballRb.isKinematic = true;
+            ballRb.useGravity = false;
+        }
+
+        // Reset Player and Enemy positions
+        playerTransform.position = playerSpawnPos;
+        enemyTransform.position = enemySpawnPos;
+
+        // Position ball according to who serves
+        if (servingTeam == "Player")
+        {
+            ballTransform.position = playerServeBallOffset;
         }
         else
         {
-            Destroy(gameObject);
+            ballTransform.position = enemyServeBallOffset;
         }
-    }
-    void Start()
-    {
-        PositionBall("");
-        PositionPlayer();
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
-    public void PositionBall(string whoServe)
-    {
-        ballRb.linearVelocity = Vector3.zero;
-        ballRb.angularVelocity = Vector3.zero;
-        ballRb.useGravity = false;
-        switch (whoServe)
-        {
-            case "Player":
-                Ball.transform.position = new Vector3(2.25f, 2.5f, -4f);
-                break;
-            default:
-                Ball.transform.position = new Vector3(0, 2.5f, 0);
-                break;
-        }
-    }
-
-    public void PositionPlayer()
-    {
-        Player.transform.position = new Vector3(2.25f, 1, -5f);
-        Player.GetComponent<Rigidbody>().linearVelocity = Vector3.zero;
-        Player.GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
     }
 }
