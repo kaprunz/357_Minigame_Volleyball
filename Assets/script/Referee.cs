@@ -19,6 +19,7 @@ public class Referee : MonoBehaviour
 
     [Header("Timing Settings")]
     [SerializeField] private float scorePauseDuration = 1.2f;
+    [SerializeField] private int maxScore = 15;
 
 
     private bool isResettingRound = false;
@@ -52,25 +53,42 @@ public class Referee : MonoBehaviour
         if (scorer == "Player") Player.instance.Points++;
         else if (scorer == "Enemy") EnemyAI.instance.Points++;
 
-        // 2. Show "POINT!" banner/UI
-        // if (pointScoredUI != null) pointScoredUI.SetActive(true);
+        int pPoints = Player.instance.Points;
+        int ePoints = EnemyAI.instance.Points;
 
-        // 3. Pause for brief second (Pikachu Volleyball style)
-        yield return new WaitForSeconds(scorePauseDuration);
+        // 2. Check for Winner BEFORE displaying score animation/banner
+        if (pPoints >= maxScore || ePoints >= maxScore)
+        {
+            string winnerName = pPoints >= maxScore ? "Player" : "Enemy";
 
-        // 4. Hide UI banner
-        // if (pointScoredUI != null) pointScoredUI.SetActive(false);
+            // Update score text one last time so the final point shows on screen
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.UpdateScoreDisplay();
+                UIManager.Instance.ShowGameOverScreen(winnerName);
+            }
 
-        // 5. Reset Positions (Unified method call)
-        ResetRoundPositions(scorer);
+            // Freeze physics and stop round loop
+            Time.timeScale = 0f;
+        }
+        else
+        {
+            // 3. Match continues: update score UI & trigger point animation
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.UpdateScoreDisplay();
+                UIManager.Instance.PlayScoreAnimation();
+            }
 
-        isResettingRound = false;
+            // 4. Pause during banner display
+            yield return new WaitForSeconds(scorePauseDuration);
+
+            // 5. Reset Positions for next serve
+            ResetRoundPositions(scorer);
+            isResettingRound = false;
+        }
     }
 
-    /// <summary>
-    /// Unified method to reposition Player, Enemy, and Ball based on who serves.
-    /// </summary>
-    /// <param name="servingTeam">"Player" or "Enemy"</param>
     public void ResetRoundPositions(string servingTeam)
     {
         // Freeze ball physics and disable gravity until it gets hit
